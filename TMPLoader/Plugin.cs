@@ -14,6 +14,13 @@ namespace TMPLoader
     {
         void Awake()
         {
+            // if some other mod has already initialized settings, we do nothing
+            if (TMP_Settings.LoadDefaultSettings() != null)
+            {
+                Debug.Log("another mod as loaded TextMeshPro");
+                return;
+            }
+
             var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("TMPLoader.Resources.tmprodefault");
             if (stream == null)
             {
