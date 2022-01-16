@@ -43,6 +43,9 @@ namespace TMPLoader
             }
 
             typeof(TMP_Settings).GetField("s_Instance", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, tmproSettings);
+
+            // unload the assetbundle to prevent mod conflicts
+            tmproBundle?.Unload(false);
         }
     }
 }
