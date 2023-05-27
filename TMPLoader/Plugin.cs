@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-
+﻿using System.Reflection;
+using System.Collections;
 using BepInEx;
-
 using UnityEngine;
 using TMPro;
 
@@ -14,38 +11,44 @@ namespace TMPLoader
     {
         void Awake()
         {
-            // if some other mod has already initialized settings, we do nothing
+            StartCoroutine(Delay());
+        }
+
+        IEnumerator Delay()
+        {
+            yield return 0;
             if (TMP_Settings.LoadDefaultSettings() != null)
             {
                 Debug.Log("another mod as loaded TextMeshPro");
-                return;
+                yield break;
             }
 
             var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("TMPLoader.Resources.tmprodefault");
             if (stream == null)
             {
                 Debug.LogError("TMPLoader.Resources.tmprodefault resource was not found");
-                return;
+                yield break;
             }
 
-            var tmproBundle = AssetBundle.LoadFromStream(stream);
-            if (tmproBundle == null)
+            var tmproBundle = AssetBundle.LoadFromStreamAsync(stream);
+            yield return tmproBundle;
+            if (tmproBundle == null || tmproBundle.assetBundle == null)
             {
                 Debug.LogError("failed to load asset bundle from stream");
-                return;
+                yield break;
             }
 
-            var tmproSettings = tmproBundle.LoadAsset<TMP_Settings>("TMP Settings");
-            if (tmproSettings == null)
+            var tmproSettings = tmproBundle.assetBundle.LoadAsset<TMP_Settings>("TMP Settings");
+            if (tmproSettings != null)
+            {
+                typeof(TMP_Settings).GetField("s_Instance", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, tmproSettings);
+            }
+            else
             {
                 Debug.LogError("failed to load asset \"TMP Settings\" from asset bundle");
-                return;
             }
-
-            typeof(TMP_Settings).GetField("s_Instance", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, tmproSettings);
-
-            // unload the assetbundle to prevent mod conflicts
-            tmproBundle?.Unload(false);
+            
+            tmproBundle.assetBundle.Unload(false);
         }
     }
 }
